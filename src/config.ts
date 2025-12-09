@@ -1,6 +1,7 @@
 /**
  * NeXifyAI Configuration
  * Central configuration for the autonomous AI agent
+ * Version: 2.0.0
  */
 
 import type { AgentConfig, AgentTool } from './types'
@@ -13,10 +14,17 @@ export const NEXIFYAI_CONFIG = {
   adminKey: process.env.OPENAI_ADMIN_KEY || '',
 
   // Assistant Configuration
-  assistantId: process.env.NEXIFYAI_ASSISTANT_ID || '',
-  vectorStoreId: process.env.NEXIFYAI_VECTOR_STORE_ID || '',
-  projectId: process.env.NEXIFYAI_PROJECT_ID || '',
-  organizationId: process.env.NEXIFYAI_ORG_ID || '',
+  assistantId:
+    process.env.NEXIFYAI_ASSISTANT_ID || 'asst_q9v3fPTIvfACHNx04aJDS2PB',
+  vectorStoreId:
+    process.env.NEXIFYAI_VECTOR_STORE_ID ||
+    'vs_69382330fae481919429750c2fa90e4c',
+  projectId: process.env.NEXIFYAI_PROJECT_ID || 'proj_FeQSUpe4jJmFVV0G3YFp6cwg',
+  organizationId: process.env.NEXIFYAI_ORG_ID || 'org-kk1ld7YE4t09C9fLQSCOkJWZ',
+
+  // Prompt Configuration
+  promptId: 'pmpt_693863013d9c8194bc93c362016920570c032926a27fd740',
+  promptVersion: '6',
 
   // Model settings
   model: process.env.NEXIFYAI_MODEL || 'gpt-4o',
@@ -30,6 +38,12 @@ export const NEXIFYAI_CONFIG = {
   // Timeouts
   timeoutMs: 120000, // 2 minutes
   pollIntervalMs: 1000,
+
+  // Primary Project
+  primaryProject: 'MyDispatch',
+  domain: 'my-dispatch.de',
+  supabaseProject: 'ykfufejycdgwonrlbhzn',
+  region: 'eu-central-1',
 } as const
 
 // Available tools for the agent
@@ -117,6 +131,45 @@ export const AGENT_TOOLS: AgentTool[] = [
     enabled: true,
   },
   {
+    name: 'task_complete',
+    description: 'Mark a task as completed with optional result notes',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Task ID to complete' },
+        result: {
+          type: 'string',
+          description: 'Result or notes about completion',
+        },
+      },
+      required: ['taskId'],
+    },
+    enabled: true,
+  },
+  {
+    name: 'vector_store_search',
+    description:
+      'Search the vector store for relevant documentation and context. MUST be called at session start.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        topK: {
+          type: 'number',
+          description: 'Number of results to return',
+          default: 5,
+        },
+        segment: {
+          type: 'string',
+          enum: ['critical', 'high', 'standard', 'all'],
+          description: 'Priority segment to search',
+        },
+      },
+      required: ['query'],
+    },
+    enabled: true,
+  },
+  {
     name: 'codebase_search',
     description: 'Search the codebase for files, functions, or patterns',
     parameters: {
@@ -128,24 +181,6 @@ export const AGENT_TOOLS: AgentTool[] = [
           description: 'Glob pattern for file filtering',
         },
         searchType: { type: 'string', enum: ['semantic', 'grep', 'file'] },
-      },
-      required: ['query'],
-    },
-    enabled: true,
-  },
-  {
-    name: 'documentation_search',
-    description:
-      'Search the documentation vector store for relevant information',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Search query' },
-        topK: {
-          type: 'number',
-          description: 'Number of results to return',
-          default: 5,
-        },
       },
       required: ['query'],
     },
@@ -168,81 +203,193 @@ export const AGENT_TOOLS: AgentTool[] = [
     },
     enabled: true,
   },
+  {
+    name: 'sync_vector_store',
+    description:
+      'Synchronize vector store with latest project data via Repomax',
+    parameters: {
+      type: 'object',
+      properties: {
+        fullSync: {
+          type: 'boolean',
+          description: 'Perform full sync vs incremental',
+        },
+        segments: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Specific segments to sync',
+        },
+      },
+    },
+    enabled: true,
+  },
 ]
 
-// System prompt for NeXifyAI
-export const NEXIFYAI_SYSTEM_PROMPT = `# NeXifyAI - Autonomous Development Agent
+// Vector Store Segments (Priority-based)
+export const VECTOR_STORE_SEGMENTS = {
+  critical: [
+    '.github/copilot-instructions.md',
+    'docs/ARCHITECTURE_MASTER.md',
+    'docs/DATABASE_SCHEMA.md',
+    'docs/API_EDGE_FUNCTIONS.md',
+    'middleware.ts',
+  ],
+  high: [
+    'docs/SUPABASE_RLS_POLICIES.md',
+    'docs/COMPONENT_PATTERNS.md',
+    'docs/STRIPE_INTEGRATION.md',
+    'docs/REALTIME_PATTERNS.md',
+    '.github/instructions/snyk_rules.instructions.md',
+  ],
+  standard: [
+    'docs/MCP_SERVER.md',
+    'docs/DEPENDENCY_MAPPING.md',
+    'docs/SYSTEM_REQUIREMENTS_PROFILE.md',
+    'docs/JWT_KEYS_INDEX.md',
+    'README.md',
+  ],
+} as const
 
-Du bist NeXifyAI, ein vollständig autonomer KI-Agent für Softwareentwicklung.
+// System prompt for NeXifyAI (Optimized v2.0)
+export const NEXIFYAI_SYSTEM_PROMPT = `# NeXifyAI - Autonomer Mastermind-Agent v2.0
 
-## Deine Kernfähigkeiten
+Du bist **NeXifyAI**, der zentrale, vollstaendig autonome Mastermind-Agent fuer alle NeXify-Projekte.
+Owner: **Pascal Courbois**
 
-1. **Codebase-Verständnis**: Du hast Zugriff auf alle Dokumentationen in der Vector-Datenbank
-2. **Task-Management**: Du kannst Tasks erstellen, priorisieren und verwalten
-3. **Code-Implementierung**: Du kannst Dateien lesen, erstellen und bearbeiten
-4. **Selbstoptimierung**: Du lernst kontinuierlich aus erfolgreichen und fehlgeschlagenen Tasks
+## PFLICHT-SEQUENZ (Bei jedem Start)
 
-## Arbeitsweise
+### 1. Vector-Datenbank Laden (IMMER ZUERST!)
+- Store ID: vs_69382330fae481919429750c2fa90e4c
+- Lade kritische Segmente: copilot-instructions, architecture-master, database-schema
+- Semantische Suche fuer Kontext aktivieren
 
-1. **Request analysieren**: Verstehe die Anfrage vollständig
-2. **Context laden**: Suche relevante Dokumentation und Code
-3. **Plan erstellen**: Definiere konkrete Tasks
-4. **Implementieren**: Führe Änderungen durch
-5. **Validieren**: Teste und verifiziere
-6. **Dokumentieren**: Committe und berichte
+### 2. Prompt laden
+- Prompt ID: pmpt_693863013d9c8194bc93c362016920570c032926a27fd740
+- Version: 6
 
-## Antwortformat
+## Kern-Konfiguration
 
-🎯 **REQUEST**: [Zusammenfassung]
+- Primary Project: MyDispatch
+- Domain: my-dispatch.de
+- Supabase: ykfufejycdgwonrlbhzn (Frankfurt/eu-central-1)
+- Tech Stack: Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Supabase
 
-📚 **CONTEXT LOADED**:
-- [Relevante Docs]
-- [Relevante Files]
+## Multi-Tenant Sicherheit (3-Layer Defense)
 
-🔍 **ANALYSIS**:
-- Current state: [Befunde]
-- Required changes: [Liste]
+KRITISCH - Bei jeder Code-Aenderung beachten!
 
-⚙️ **IMPLEMENTATION**:
-- [Änderungen]
+Layer 1: middleware.ts - Auth + Subscription Check
+Layer 2: API Routes - company_id FORCED from profile (NICHT vom Request!)
+Layer 3: RLS Policies - Database-level Row Filtering
 
-✅ **VALIDATION**:
-- Build: ✓/✗
-- Types: ✓/✗
+VERBOTEN: company_id vom User-Input akzeptieren
+KORREKT: company_id aus profile.company_id erzwingen
 
-📝 **COMMIT**:
-- Message: [Beschreibung]
+## Autonome Arbeitssequenz
 
-Antworte immer auf Deutsch. Sei präzise und fokussiert.`
+Phase 1: Initialisierung
+- Vector Store laden
+- Umgebung erkennen (IDE/staging/production)
+- Supabase, MCP-Server, Repomax verbinden
 
-// Build default agent configuration
-export function buildAgentConfig(
-  overrides?: Partial<AgentConfig>
-): AgentConfig {
+Phase 2: Daten-Aggregation
+- Vector Store abfragen
+- Repository-Status holen
+- Datenintegritaet validieren
+
+Phase 3: IST-SOLL-Analyse
+- Aktuellen Zustand analysieren
+- Zielzustand definieren
+- Abhaengigkeiten mappen
+
+Phase 4: Implementierungsplan
+- Risiken reflektieren
+- Segmentierten Plan erstellen
+- Aktionen strukturieren
+
+Phase 5: Ausfuehrung
+- Plan ausfuehren (autonom)
+- Live-Validierung
+- Luecken sofort schliessen
+- Backup mit Versionierung
+
+Phase 6: Finalisierung
+- Ergebnisse dokumentieren
+- Vector Store synchronisieren
+- Naechste Schritte empfehlen
+
+## Output-Format (STRIKT!)
+
+{
+  "reasoning": "[Analyse, geladene Infos, erkannte Probleme, Validierung]",
+  "vector_store_context": {
+    "loaded_segments": ["..."],
+    "semantic_matches": 5
+  },
+  "ist_state": "[Aktueller Zustand]",
+  "soll_state": "[Zielzustand]",
+  "implementation_plan": {
+    "steps": ["..."],
+    "risks": ["..."],
+    "mitigations": ["..."]
+  },
+  "execution_log": ["[Chronologische Events]"],
+  "conclusion": "[Ergebnis - IMMER ZULETZT]",
+  "next_steps": ["[Weitere Aktionen]"]
+}
+
+WICHTIG:
+- reasoning IMMER zuerst
+- conclusion IMMER zuletzt
+- Niemals mit Schlussfolgerungen beginnen!
+
+## Sub-Agenten
+
+- DevOpsAI: CI/CD, Deployment
+- DocsAI: Dokumentation, Vector Store Sync
+- AnalyticsAI: Metriken, Monitoring
+- SecurityAI: Snyk Scans, RLS Policies
+
+## Self-Healing
+
+- Fehlende Segmente: Auto-Repair + Rekursion
+- Agent-Konflikte: Auto-Rekonciliation
+- Legal/Ethical Risks: IMMER loggen und eskalieren
+`
+
+/**
+ * Build agent configuration
+ */
+export function buildAgentConfig(): AgentConfig {
   return {
-    assistantId: NEXIFYAI_CONFIG.assistantId,
-    vectorStoreId: NEXIFYAI_CONFIG.vectorStoreId,
-    projectId: NEXIFYAI_CONFIG.projectId,
-    organizationId: NEXIFYAI_CONFIG.organizationId,
+    name: 'NeXifyAI',
+    version: '2.0.0',
     model: NEXIFYAI_CONFIG.model,
     temperature: NEXIFYAI_CONFIG.temperature,
     maxTokens: NEXIFYAI_CONFIG.maxTokens,
-    tools: AGENT_TOOLS.filter((t) => t.enabled),
     systemPrompt: NEXIFYAI_SYSTEM_PROMPT,
-    ...overrides,
+    tools: AGENT_TOOLS.filter((t) => t.enabled),
+    vectorStoreId: NEXIFYAI_CONFIG.vectorStoreId,
+    assistantId: NEXIFYAI_CONFIG.assistantId,
   }
 }
 
-// Validate configuration
+/**
+ * Validate configuration
+ */
 export function validateConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = []
 
   if (!NEXIFYAI_CONFIG.apiKey) {
-    errors.push('OPENAI_API_KEY is required')
+    errors.push('OPENAI_API_KEY is not configured')
   }
 
   if (!NEXIFYAI_CONFIG.assistantId) {
-    errors.push('NEXIFYAI_ASSISTANT_ID is required')
+    errors.push('NEXIFYAI_ASSISTANT_ID is not configured')
+  }
+
+  if (!NEXIFYAI_CONFIG.vectorStoreId) {
+    errors.push('NEXIFYAI_VECTOR_STORE_ID is not configured')
   }
 
   return {

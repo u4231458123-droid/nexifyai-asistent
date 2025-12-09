@@ -1,5 +1,6 @@
 /**
  * NeXifyAI Types - Type definitions for the autonomous AI agent
+ * Version: 2.0.0
  */
 
 // Task status enum
@@ -114,10 +115,12 @@ export interface AgentSession {
 
 // Agent configuration
 export interface AgentConfig {
+  name: string
+  version: string
   assistantId: string
   vectorStoreId: string
-  projectId: string
-  organizationId: string
+  projectId?: string
+  organizationId?: string
   model: string
   temperature: number
   maxTokens: number
@@ -172,4 +175,27 @@ export interface OpenAIToolCall {
     name: string
     arguments: string
   }
+}
+
+// Vector Store Segment Priority
+export type VectorStoreSegmentPriority = 'critical' | 'high' | 'standard'
+
+// Agent output format (JSON response structure)
+export interface AgentOutput {
+  reasoning: string
+  vector_store_context: {
+    loaded_segments: string[]
+    semantic_matches: number
+    freshness?: string
+  }
+  ist_state: string
+  soll_state: string
+  implementation_plan: {
+    steps: string[]
+    risks: string[]
+    mitigations: string[]
+  }
+  execution_log: string[]
+  conclusion: string
+  next_steps: string[]
 }
