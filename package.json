@@ -1,0 +1,67 @@
+{
+  "name": "@nexifyai/assistant",
+  "version": "1.0.0",
+  "description": "NeXifyAI - Autonomer AI Agent für MyDispatch mit Task-Management, Vector Store Integration und Self-Optimization",
+  "author": "NeXify Solutions",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "openai": "^4.73.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "^9.16.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "openai": ">=4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "openai",
+    "agent",
+    "autonomous",
+    "task-management",
+    "vector-store",
+    "mydispatch",
+    "nexifyai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/u4231458123-droid/nexifyai-asistent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u4231458123-droid/nexifyai-asistent/issues"
+  },
+  "homepage": "https://github.com/u4231458123-droid/nexifyai-asistent#readme"
+}
