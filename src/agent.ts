@@ -198,6 +198,7 @@ async function handleToolCalls(
           break
         }
 
+        case 'vector_store_search':
         case 'documentation_search': {
           const searchResults = await searchVectorStore(
             args.query,
@@ -215,6 +216,18 @@ async function handleToolCalls(
           break
         }
 
+        case 'codebase_search': {
+          result =
+            'Das Tool "codebase_search" ist in @nexifyai/assistant als Schnittstelle definiert und erfordert eine IDE- oder CI-Umgebung mit eigenem Code-Suchservice (z.B. Repomax). In dieser Laufzeitumgebung steht keine direkte Codebase-Suche zur Verfügung.'
+          break
+        }
+
+        case 'sync_vector_store': {
+          result =
+            'Das Tool "sync_vector_store" triggert in der Regel eine externe Sync-Pipeline (z.B. Repomax → OpenAI Vector Store). Bitte führe den entsprechenden CI-/Sync-Job in deiner Umgebung aus.'
+          break
+        }
+
         case 'learning_record': {
           const learning = recordLearning({
             taskId: session.tasks[session.tasks.length - 1]?.id || 'unknown',
@@ -227,7 +240,7 @@ async function handleToolCalls(
         }
 
         default:
-          result = `Tool nicht implementiert: ${fn.name}`
+          result = `Tool nicht implementiert oder in dieser Laufzeitumgebung nicht verfügbar: ${fn.name}`
       }
 
       results[id] = result
