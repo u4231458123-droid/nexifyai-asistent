@@ -110,8 +110,8 @@ export function getSuccessfulPatterns(category?: string): string[] {
  */
 export function getImprovementSuggestions(): string[] {
   return Array.from(learnings.values())
-    .filter((entry) => entry.improvement)
-    .map((entry) => entry.improvement!)
+    .filter((entry) => entry.improvement !== undefined)
+    .map((entry) => entry.improvement as string)
     .filter((value, index, self) => self.indexOf(value) === index) // Unique
 }
 

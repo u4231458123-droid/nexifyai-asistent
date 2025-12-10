@@ -89,7 +89,9 @@ export function updateTask(
   >
 ): Task | undefined {
   const task = tasks.get(taskId)
-  if (!task) return undefined
+  if (!task) {
+    return undefined
+  }
 
   Object.assign(task, updates, { updatedAt: new Date() })
 
@@ -118,7 +120,9 @@ export function addTaskContext(
   context: Partial<TaskContext>
 ): Task | undefined {
   const task = tasks.get(taskId)
-  if (!task) return undefined
+  if (!task) {
+    return undefined
+  }
 
   task.context = {
     ...task.context,
@@ -149,7 +153,9 @@ export function completeTask(
   result: TaskResult
 ): Task | undefined {
   const task = tasks.get(taskId)
-  if (!task) return undefined
+  if (!task) {
+    return undefined
+  }
 
   task.status = result.success ? 'completed' : 'failed'
   task.completedAt = new Date()
@@ -195,7 +201,9 @@ export function listTasks(filters?: {
 
   result.sort((a, b) => {
     const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
-    if (priorityDiff !== 0) return priorityDiff
+    if (priorityDiff !== 0) {
+      return priorityDiff
+    }
     return b.createdAt.getTime() - a.createdAt.getTime()
   })
 
@@ -218,7 +226,9 @@ export function getTaskTree(taskId: string): Task | undefined {
  */
 export function deleteTask(taskId: string): boolean {
   const task = tasks.get(taskId)
-  if (!task) return false
+  if (!task) {
+    return false
+  }
 
   // Delete subtasks first
   if (task.subtasks) {
@@ -362,7 +372,7 @@ export function formatTaskList(taskList: Task[]): string {
   let output = `📋 **Task-Übersicht** (${taskList.length} Tasks)\n\n`
 
   for (const task of taskList) {
-    output += formatTask(task) + '\n'
+    output += `${formatTask(task)}\n`
   }
 
   return output
