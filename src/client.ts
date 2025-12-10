@@ -88,7 +88,7 @@ export async function runAssistant(
 export async function waitForRunCompletion(
   threadId: string,
   runId: string,
-  onToolCall?: (toolCalls: OpenAIToolCall[]) => Promise<Record<string, string>>
+  onToolCall?: (_toolCalls: OpenAIToolCall[]) => Promise<Record<string, string>>
 ): Promise<OpenAI.Beta.Threads.Runs.Run> {
   const client = getOpenAIClient()
   const startTime = Date.now()
@@ -176,11 +176,11 @@ export async function getThreadMessages(
  */
 export async function searchVectorStore(
   query: string,
-  _topK: number = 5
+  topK: number = 5
 ): Promise<VectorSearchResult[]> {
   // For now, return empty - vector search is handled by the assistant with file_search tool
   // This can be extended to use the Responses API with file_search in the future
-  console.log(`Vector search for: ${query}`)
+  console.log(`Vector search for: ${query} (topK: ${topK})`)
   return []
 }
 
